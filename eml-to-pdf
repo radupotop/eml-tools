@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 import weasyprint as wp
 from bs4 import BeautifulSoup
 from jinja2 import Environment
+from pypdf import PdfReader, PdfWriter
 
 EML_CONTENT_TYPES = ('text/html', 'text/plain')
 EML_HEADERS = ('Date', 'Subject', 'From', 'To', 'Cc')
@@ -148,9 +149,20 @@ def save_html(path, html_content):
     print(tmp.name, file=sys.stderr)
 
 
-def save_pdf(path, html_content):
+def save_pdf(path, html_content, include_all_pages=False):
     pdf_path = Path(path).with_suffix('.pdf')
     wp.HTML(string=html_content, base_url=str(BASE_DIR)).write_pdf(pdf_path)
+    # Trim by default: keep only the first page while retaining metadata
+    if not include_all_pages:
+        reader = PdfReader(pdf_path)
+        if not reader.pages:
+            raise RuntimeError('No pages generated for PDF')
+        writer = PdfWriter()
+        writer.add_page(reader.pages[0])
+        if reader.metadata:
+            writer.add_metadata(reader.metadata)
+        with pdf_path.open('wb') as pdf_file:
+            writer.write(pdf_file)
     print(f'"{pdf_path}"')
 
 
@@ -158,6 +170,11 @@ if __name__ == '__main__':
     if not CSS_FILE.is_file():
         raise RuntimeError('Could not find CSS File')
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--all-pages',
+        action='store_true',
+        help='Include all pages instead of only the first',
+    )
     parser.add_argument('email_files', type=str, nargs='+')
     args = parser.parse_args()
     # Run all
@@ -165,4 +182,4 @@ if __name__ == '__main__':
         raw_eml = read_eml(eml_path)
         html_content = eml_to_html(raw_eml)
         save_html(eml_path, html_content)
-        save_pdf(eml_path, html_content)
+        save_pdf(eml_path, html_content, include_all_pages=args.all_pages)
