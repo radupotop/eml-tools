@@ -19,7 +19,6 @@ from pypdf import PdfReader, PdfWriter
 
 EML_CONTENT_TYPES = ('text/html', 'text/plain')
 EML_HEADERS = ('Date', 'Subject', 'From', 'To', 'Cc')
-PREFERRED = EML_CONTENT_TYPES[0]
 TS_FORMAT = '%-d %B %Y, %H:%M (%Z)'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
@@ -74,7 +73,7 @@ def strip_html_tags(html_source: str) -> str:
     soup = BeautifulSoup(html_source, 'html.parser')
     # Delete all <style> tags
     for tag in soup.find_all('style'):
-        print('Removing tag:', tag, file=sys.stderr)
+        # print('Removing tag:', tag, file=sys.stderr)
         tag.decompose()
     # Delete all style= attributes
     for tag in soup.find_all(style=True):
@@ -119,11 +118,13 @@ def parse_part(part: MIMEPart) -> ParsedPart | None:
 
 
 def parse_multipart(msg: EmailMessage) -> ParsedPart:
-    part_map = dict()
-    for part in msg.walk():  # flat list of all sub-parts
-        if p := parse_part(part):
-            part_map[p.content_type] = p
-    return part_map[PREFERRED]
+    # Flat list of all sub-parts
+    parsed_parts = (parse_part(part) for part in msg.walk())
+    all_parts = list(filter(None, parsed_parts))
+    # Will sort text/html before text/plain
+    all_parts.sort()
+    print(f"Parts found: {[p.content_type for p in all_parts]}", file=sys.stderr)
+    return all_parts[0]
 
 
 def eml_to_html(msg: EmailMessage):
