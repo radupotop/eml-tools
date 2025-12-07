@@ -151,7 +151,10 @@ def save_html(path, html_content):
 
 
 def save_pdf(path, html_content, pages=1):
-    pdf_path = Path(path).with_suffix('.pdf')
+    eml_path = Path(path)
+    pdf_dir = eml_path.resolve().parent / 'pdf_print'
+    pdf_dir.mkdir(exist_ok=True)
+    pdf_path = pdf_dir / (eml_path.stem + '.pdf')
     wp.HTML(string=html_content, base_url=str(BASE_DIR)).write_pdf(pdf_path)
     keep_pages = pages if (pages and pages > 0) else 1
     reader = PdfReader(pdf_path)
