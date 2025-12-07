@@ -19,7 +19,7 @@ from jinja2 import Environment
 EML_CONTENT_TYPES = ('text/html', 'text/plain')
 EML_HEADERS = ('Date', 'Subject', 'From', 'To', 'Cc')
 PREFERRED = EML_CONTENT_TYPES[0]
-TS_FORMAT = '%-d %B %Y, %H:%M'  # https://strftime.org/
+TS_FORMAT = '%-d %B %Y, %H:%M (%Z)'  # https://strftime.org/
 TZ = ZoneInfo('Europe/London')
 
 # Internal
